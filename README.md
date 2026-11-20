@@ -92,20 +92,20 @@ tests/            # pytest regression tests
 
 ## Verification
 
-Seven maturity-specific tests were reported passing in an earlier local run. For this dashboard update, Python syntax compilation passed locally; the full test suite, live Streamlit startup, and GitHub Actions results have **not** been verified. CI is configured for pytest and a CLI smoke test on Python 3.10 and 3.12; consult the linked workflow for its current status. No dashboard screenshot or performance benchmark is claimed.
+Seven maturity-specific tests were reported passing in an earlier local run. The CI workflow now installs dashboard dependencies and checks pytest, six nonempty CLI CSV exports, Python compilation, and the Streamlit HTTP health endpoint on Python 3.10 and 3.12. **The updated CI run has not yet been verified**, and an HTTP health check does not prove the Streamlit script renders without runtime exceptions. No dashboard screenshot or performance benchmark is claimed.
 
 ## Engineering trade-offs and limitations
 
 - A cohort is the month of **first observed event**, not necessarily signup or acquisition.
 - Retention measures observed activity; it is **not** subscription survival or contractual churn.
 - The latest observed event month is the default observation boundary. Sparse late data can make some apparently mature months zero; supply a deliberate `--as-of` for controlled reporting.
-- The dashboard presents maturity-aware heatmap and weighted retention panels; it has not been browser-smoke-tested in this update.
+- The dashboard presents maturity-aware heatmap and weighted retention panels; CI checks HTTP startup but does not yet browser-test the rendered UI.
 - Input events are not deduplicated by event ID; revenue assumes events represent recognized amounts, without refunds, FX, or tax handling.
 - pandas in-memory processing is suitable for portfolio/demo datasets, not massive streaming workloads.
 
 ## Roadmap
 
-- Add automated Streamlit browser smoke tests and visual regression checks.
+- Add rendered Streamlit AppTest/browser smoke tests and visual regression checks.
 - Add data-quality diagnostics, explicit event IDs, and duplicate detection.
 - Add DuckDB/Parquet input for larger reproducible workloads.
 - Add integration tests for dashboard startup and CSV schema contracts.
