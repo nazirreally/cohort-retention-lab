@@ -6,6 +6,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         python-version: ['3.10', '3.12']
     steps:
@@ -13,6 +14,44 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - run: python -m pip install -e '.[test]'
-      - run: pytest -q
-      - run: cohortlab --out /tmp/cohortlab-output
+      - name: Install package and dashboard dependencies
+        run: python -m pip install -e '.[test,dashboard]'
+      - name: Unit and regression tests
+        run: python -m pytest -q
+      - name: CLI end-to-end smoke test
+        run: |
+          cohortlab --seed 42 --max-age 6 --out /tmp/cohortlab-output
+          python - <<'PY'
+          from pathlib import Path
+          import pandas as pd
+          folder = Path('/tmp/cohortlab-output')
+          expected = {'events.csv', 'retention.csv', 'cohort_revenue.csv',
+                      'monthly_metrics.csv', 'mature_retention.csv', 'weighted_retention.csv'}
+          assert expected <= {p.name for p in folder.glob('*.csv')}
+          for name in expected:
+              assert not pd.read_csv(folder / name).empty, name
+          print('Six nonempty CSV exports verified')
+          PY
+      - name: Dashboard import and Streamlit smoke test
+        run: |
+          python -m compileall -q src dashboard.py
+          python -m streamlit run dashboard.py --server.headless true --server.address 127.0.0.1 --server.port 8501 > /tmp/streamlit.log 2>&1 &
+          pid=$!
+          trap 'kill "$pid" 2>/dev/null || true' EXIT
+          python - <<'PY'
+          import time
+          import urllib.request
+          from urllib.error import URLError
+          url = 'http://127.0.0.1:8501/_stcore/health'
+          for _ in range(40):
+              try:
+                  with urllib.request.urlopen(url, timeout=2) as response:
+                      if response.status == 200 and response.read().strip() == b'ok':
+                          print('Streamlit health endpoint returned 200 OK')
+                          break
+              except (URLError, TimeoutError):
+                  pass
+              time.sleep(0.5)
+          else:
+              raise SystemExit('Streamlit did not become healthy within 20 seconds')
+          PY
