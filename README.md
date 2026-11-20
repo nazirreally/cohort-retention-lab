@@ -42,7 +42,11 @@ flowchart LR
 - **Maturity-aware retention grid:** missing mature months count as zero, future/unobserved months are omitted.
 - **Cohort-size-weighted retention** by age, using only eligible cohorts.
 - Optional `--as-of` observation cutoff and `--max-age` horizon.
-- CSV exports and a Streamlit dashboard for the original retention and revenue views.
+- CSV exports and a Streamlit dashboard with maturity-aware heatmap, cohort-size-weighted retention curve, observation cutoff, age horizon, and revenue views.
+
+## Dashboard walkthrough
+
+Upload an events CSV or use the seeded sample, select an observation cutoff, and adjust the maximum cohort age (0–24 months). The heatmap distinguishes mature zero-activity months from future cells, while the weighted curve uses only eligible cohorts at each age. Revenue and customer KPIs respect the selected cutoff. Download the maturity grid, weighted summary, or monthly revenue from the dashboard. These charts measure observed activity, not subscription cancellation.
 
 ## Setup and reproducible demo
 
@@ -88,20 +92,20 @@ tests/            # pytest regression tests
 
 ## Verification
 
-Seven new maturity-specific tests were executed locally and passed. The repository CI runs pytest and a CLI smoke test on Python 3.10 and 3.12; consult the linked workflow for its **current** status. No dashboard screenshot or performance benchmark is claimed.
+Seven maturity-specific tests were reported passing in an earlier local run. For this dashboard update, Python syntax compilation passed locally; the full test suite, live Streamlit startup, and GitHub Actions results have **not** been verified. CI is configured for pytest and a CLI smoke test on Python 3.10 and 3.12; consult the linked workflow for its current status. No dashboard screenshot or performance benchmark is claimed.
 
 ## Engineering trade-offs and limitations
 
 - A cohort is the month of **first observed event**, not necessarily signup or acquisition.
 - Retention measures observed activity; it is **not** subscription survival or contractual churn.
 - The latest observed event month is the default observation boundary. Sparse late data can make some apparently mature months zero; supply a deliberate `--as-of` for controlled reporting.
-- The maturity-aware exports do not yet appear as separate dashboard panels.
+- The dashboard presents maturity-aware heatmap and weighted retention panels; it has not been browser-smoke-tested in this update.
 - Input events are not deduplicated by event ID; revenue assumes events represent recognized amounts, without refunds, FX, or tax handling.
 - pandas in-memory processing is suitable for portfolio/demo datasets, not massive streaming workloads.
 
 ## Roadmap
 
-- Add maturity-aware heatmap and age summary to Streamlit.
+- Add automated Streamlit browser smoke tests and visual regression checks.
 - Add data-quality diagnostics, explicit event IDs, and duplicate detection.
 - Add DuckDB/Parquet input for larger reproducible workloads.
 - Add integration tests for dashboard startup and CSV schema contracts.
