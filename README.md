@@ -89,7 +89,7 @@ src/cohortlab/
   generate.py     # synthetic events
   cli.py          # six CSV exports
 dashboard.py      # Streamlit visualization
-tests/            # pytest regression tests
+tests/            # pytest regression tests, including dashboard AppTest
 .github/workflows/ci.yml
 ```
 
@@ -110,24 +110,24 @@ The original cohort size remains the denominator at every age. Missing mature mo
 
 The [21 November 2026 GitHub Actions run](https://github.com/nazirreally/cohort-retention-lab/actions/runs/44906306722) passed on **Python 3.10 and 3.12**. Its jobs ran the full pytest suite, a CLI smoke test verifying six nonempty CSV exports, Python compilation, and a Streamlit HTTP health check.
 
-**Remaining verification gap:** Streamlit startup health does not guarantee that the full dashboard (including the observed-revenue chart) renders without exceptions after interaction. No automated browser or `streamlit.testing.v1.AppTest` regression is yet included; no screenshot or performance benchmark is claimed.
+**Dashboard smoke tests:** the [21 November 2026 AppTest run](https://github.com/nazirreally/cohort-retention-lab/actions/runs/44946410356) passed with a seeded default dashboard render and a rerender after changing the cohort-age control. These are headless Streamlit application tests, **not** real-browser visual regression, uploaded-CSV interaction coverage or a performance benchmark.
 
 ## Engineering trade-offs and limitations
 
 - A cohort is the month of **first observed event**, not necessarily signup or acquisition.
 - Retention measures observed activity; it is **not** subscription survival or contractual churn.
 - The latest observed event month is the default observation boundary. Sparse late data can make some apparently mature months zero; supply a deliberate `--as-of` for controlled reporting.
-- The dashboard presents maturity-aware heatmap, weighted retention, and observed cumulative revenue panels; CI checks HTTP startup but does not yet browser-test the rendered UI.
+- The dashboard presents maturity-aware heatmap, weighted retention, and observed cumulative revenue panels; CI checks HTTP startup and headless AppTest rendering but does not yet run real-browser visual tests.
 - Input events are not deduplicated by event ID; revenue assumes events represent recognized amounts, without refunds, FX, or tax handling.
 - Timezone-aware timestamps are normalized to UTC before month bucketing; this can move events near month boundaries into the previous or next month relative to their source timezone.
 - pandas in-memory processing is suitable for portfolio/demo datasets, not massive streaming workloads.
 
 ## Roadmap
 
-- Add rendered Streamlit AppTest/browser smoke tests and visual regression checks.
+- Expand Streamlit AppTest coverage for uploaded datasets, add real-browser smoke tests and visual regression checks.
 - Add data-quality diagnostics, explicit event IDs, and duplicate detection.
 - Expose observed cohort revenue per customer in CLI exports.
 - Add DuckDB/Parquet input for larger reproducible workloads.
-- Add integration tests for dashboard startup and CSV schema contracts.
+- Extend dashboard CSV upload and exported-file schema contract tests.
 
 **License:** Check repository license metadata before reuse; no license is implied by this README.
