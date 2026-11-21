@@ -44,11 +44,11 @@ flowchart LR
 - **Cohort-size-weighted retention** by age, using only eligible cohorts.
 - Optional `--as-of` observation cutoff and `--max-age` horizon.
 - **Observed cohort revenue per original customer** via the Python API, with zero-revenue mature months and cumulative revenue by age. This is a historical revenue proxy, not predicted lifetime value.
-- CSV exports and a Streamlit dashboard with maturity-aware heatmap, cohort-size-weighted retention curve, observation cutoff, age horizon, and revenue views.
+- CSV exports and a Streamlit dashboard with maturity-aware heatmap, cohort-size-weighted retention curve, observed cumulative revenue per original customer, observation cutoff, age horizon, and revenue views.
 
 ## Dashboard walkthrough
 
-Upload an events CSV or use the seeded sample, select an observation cutoff, and adjust the maximum cohort age (0–24 months). The heatmap distinguishes mature zero-activity months from future cells, while the weighted curve uses only eligible cohorts at each age. Revenue and customer KPIs respect the selected cutoff. Download the maturity grid, weighted summary, or monthly revenue from the dashboard. These charts measure observed activity, not subscription cancellation.
+Upload an events CSV or use the seeded sample, select an observation cutoff, and adjust the maximum cohort age (0–24 months). The heatmap distinguishes mature zero-activity months from future cells, while the weighted curve uses only eligible cohorts at each age. Revenue and customer KPIs respect the selected cutoff. The observed revenue panel plots cumulative recognized revenue per original customer by cohort and offers a CSV download. Download the maturity grid, weighted summary, observed cohort revenue, or monthly revenue from the dashboard. These charts measure observed activity, not subscription cancellation.
 
 ## Setup and reproducible demo
 
@@ -104,18 +104,18 @@ print(result[['cohort', 'age', 'revenue', 'cumulative_revenue',
               'revenue_per_original_customer']].head())
 ```
 
-The original cohort size remains the denominator at every age. Missing mature months contribute zero revenue, and future months are omitted. This feature is available through the Python API; CLI and dashboard integration are not yet implemented.
+The original cohort size remains the denominator at every age. Missing mature months contribute zero revenue, and future months are omitted. This feature is available through the Python API and dashboard (including a CSV download). CLI integration is not yet implemented.
 
 ## Verification
 
-Four new LTV regression tests passed in a local isolated module harness using the repository's cohort maturity behavior; the full package test suite and GitHub Actions were not verified for this change. Seven maturity-specific tests were reported passing in an earlier local run. Eleven new input-quality regression cases passed locally against the updated analytics module on Python 3.11 with pandas 2.2.3; the entire repository suite was not rerun locally. The CI workflow now installs dashboard dependencies and checks pytest, six nonempty CLI CSV exports, Python compilation, and the Streamlit HTTP health endpoint on Python 3.10 and 3.12. **The updated CI run has not yet been verified**, and an HTTP health check does not prove the Streamlit script renders without runtime exceptions. No dashboard screenshot or performance benchmark is claimed.
+Four new LTV regression tests passed in a local isolated module harness using the repository's cohort maturity behavior; the full package test suite and GitHub Actions were not verified for this change. Seven maturity-specific tests were reported passing in an earlier local run. Eleven new input-quality regression cases passed locally against the updated analytics module on Python 3.11 with pandas 2.2.3; the entire repository suite was not rerun locally. The CI workflow now installs dashboard dependencies and checks pytest, six nonempty CLI CSV exports, Python compilation, and the Streamlit HTTP health endpoint on Python 3.10 and 3.12. **The updated CI run has not yet been verified; the newly added observed-revenue dashboard panel has not been independently render-tested**, and an HTTP health check does not prove the Streamlit script renders without runtime exceptions. No dashboard screenshot or performance benchmark is claimed.
 
 ## Engineering trade-offs and limitations
 
 - A cohort is the month of **first observed event**, not necessarily signup or acquisition.
 - Retention measures observed activity; it is **not** subscription survival or contractual churn.
 - The latest observed event month is the default observation boundary. Sparse late data can make some apparently mature months zero; supply a deliberate `--as-of` for controlled reporting.
-- The dashboard presents maturity-aware heatmap and weighted retention panels; CI checks HTTP startup but does not yet browser-test the rendered UI.
+- The dashboard presents maturity-aware heatmap, weighted retention, and observed cumulative revenue panels; CI checks HTTP startup but does not yet browser-test the rendered UI.
 - Input events are not deduplicated by event ID; revenue assumes events represent recognized amounts, without refunds, FX, or tax handling.
 - Timezone-aware timestamps are normalized to UTC before month bucketing; this can move events near month boundaries into the previous or next month relative to their source timezone.
 - pandas in-memory processing is suitable for portfolio/demo datasets, not massive streaming workloads.
@@ -124,7 +124,7 @@ Four new LTV regression tests passed in a local isolated module harness using th
 
 - Add rendered Streamlit AppTest/browser smoke tests and visual regression checks.
 - Add data-quality diagnostics, explicit event IDs, and duplicate detection.
-- Expose observed cohort revenue per customer in CLI exports and the dashboard.
+- Expose observed cohort revenue per customer in CLI exports.
 - Add DuckDB/Parquet input for larger reproducible workloads.
 - Add integration tests for dashboard startup and CSV schema contracts.
 
