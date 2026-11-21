@@ -36,7 +36,7 @@ flowchart LR
 ## Implemented features
 
 - Seeded synthetic customer activity and custom CSV ingestion.
-- Input validation for required columns, dates, identifiers, and nonnegative revenue.
+- Input validation for required columns, nonblank identifiers, nonnull dates, and finite nonnegative revenue. Timezone-aware event timestamps are converted to UTC before monthly grouping.
 - Unique-customer cohort activity retention (reactivation permitted).
 - Cohort revenue, monthly recognized revenue, and ARPU.
 - **Maturity-aware retention grid:** missing mature months count as zero, future/unobserved months are omitted.
@@ -92,7 +92,7 @@ tests/            # pytest regression tests
 
 ## Verification
 
-Seven maturity-specific tests were reported passing in an earlier local run. The CI workflow now installs dashboard dependencies and checks pytest, six nonempty CLI CSV exports, Python compilation, and the Streamlit HTTP health endpoint on Python 3.10 and 3.12. **The updated CI run has not yet been verified**, and an HTTP health check does not prove the Streamlit script renders without runtime exceptions. No dashboard screenshot or performance benchmark is claimed.
+Seven maturity-specific tests were reported passing in an earlier local run. Eleven new input-quality regression cases passed locally against the updated analytics module on Python 3.11 with pandas 2.2.3; the entire repository suite was not rerun locally. The CI workflow now installs dashboard dependencies and checks pytest, six nonempty CLI CSV exports, Python compilation, and the Streamlit HTTP health endpoint on Python 3.10 and 3.12. **The updated CI run has not yet been verified**, and an HTTP health check does not prove the Streamlit script renders without runtime exceptions. No dashboard screenshot or performance benchmark is claimed.
 
 ## Engineering trade-offs and limitations
 
@@ -101,6 +101,7 @@ Seven maturity-specific tests were reported passing in an earlier local run. The
 - The latest observed event month is the default observation boundary. Sparse late data can make some apparently mature months zero; supply a deliberate `--as-of` for controlled reporting.
 - The dashboard presents maturity-aware heatmap and weighted retention panels; CI checks HTTP startup but does not yet browser-test the rendered UI.
 - Input events are not deduplicated by event ID; revenue assumes events represent recognized amounts, without refunds, FX, or tax handling.
+- Timezone-aware timestamps are normalized to UTC before month bucketing; this can move events near month boundaries into the previous or next month relative to their source timezone.
 - pandas in-memory processing is suitable for portfolio/demo datasets, not massive streaming workloads.
 
 ## Roadmap
