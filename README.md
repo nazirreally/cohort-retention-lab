@@ -108,7 +108,9 @@ The original cohort size remains the denominator at every age. Missing mature mo
 
 ## Verification
 
-Four new LTV regression tests passed in a local isolated module harness using the repository's cohort maturity behavior; the full package test suite and GitHub Actions were not verified for this change. Seven maturity-specific tests were reported passing in an earlier local run. Eleven new input-quality regression cases passed locally against the updated analytics module on Python 3.11 with pandas 2.2.3; the entire repository suite was not rerun locally. The CI workflow now installs dashboard dependencies and checks pytest, six nonempty CLI CSV exports, Python compilation, and the Streamlit HTTP health endpoint on Python 3.10 and 3.12. **The [21 November 2026 CI run](https://github.com/nazirreally/cohort-retention-lab/actions/runs/44906306722) passed both Python 3.10 and 3.12 jobs, including pytest, six nonempty CLI exports, compilation and the Streamlit health check. The observed-revenue dashboard panel has not been independently browser-render-tested**, and an HTTP health check does not prove the Streamlit script renders without runtime exceptions. No dashboard screenshot or performance benchmark is claimed.
+The [21 November 2026 GitHub Actions run](https://github.com/nazirreally/cohort-retention-lab/actions/runs/44906306722) passed on **Python 3.10 and 3.12**. Its jobs ran the full pytest suite, a CLI smoke test verifying six nonempty CSV exports, Python compilation, and a Streamlit HTTP health check.
+
+**Remaining verification gap:** Streamlit startup health does not guarantee that the full dashboard (including the observed-revenue chart) renders without exceptions after interaction. No automated browser or `streamlit.testing.v1.AppTest` regression is yet included; no screenshot or performance benchmark is claimed.
 
 ## Engineering trade-offs and limitations
 
