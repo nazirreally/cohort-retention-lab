@@ -47,7 +47,7 @@ def test_bad_date(sample):
 
 def test_null_customer(sample):
     sample.loc[0, "customer_id"] = None
-    with pytest.raises(ValueError, match="Null customer"):
+    with pytest.raises(ValueError, match="Customer IDs must be nonempty"):
         prepare(sample)
 
 def test_empty():
