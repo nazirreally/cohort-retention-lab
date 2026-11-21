@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 
 
 REQUIRED = {"customer_id", "event_date", "revenue"}
@@ -11,12 +12,15 @@ def prepare(events: pd.DataFrame) -> pd.DataFrame:
     if events.empty:
         raise ValueError("No events")
     df = events.copy()
-    if df["customer_id"].isna().any():
-        raise ValueError("Null customer IDs")
-    df["event_date"] = pd.to_datetime(df["event_date"], errors="raise")
+    if df["customer_id"].isna().any() or df["customer_id"].astype(str).str.strip().eq("").any():
+        raise ValueError("Customer IDs must be nonempty")
+    df["event_date"] = pd.to_datetime(df["event_date"], errors="raise", utc=True)
+    if df["event_date"].isna().any():
+        raise ValueError("Event dates must be nonnull")
+    df["event_date"] = df["event_date"].dt.tz_localize(None)
     df["revenue"] = pd.to_numeric(df["revenue"], errors="raise")
-    if df["revenue"].isna().any() or (df["revenue"] < 0).any():
-        raise ValueError("Revenue must be nonnegative")
+    if not np.isfinite(df["revenue"].to_numpy(dtype=float)).all() or (df["revenue"] < 0).any():
+        raise ValueError("Revenue must be finite and nonnegative")
     df["month"] = df["event_date"].dt.to_period("M")
     first = df.groupby("customer_id")["month"].min().rename("cohort")
     df = df.join(first, on="customer_id")
