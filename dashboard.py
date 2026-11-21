@@ -6,6 +6,7 @@ import streamlit as st
 from cohortlab.core import monthly_metrics, revenue_by_cohort, retention, prepare
 from cohortlab.generate import generate
 from cohortlab.maturity import retention_matrix, retention_summary
+from cohortlab.ltv import cohort_ltv
 
 st.set_page_config(page_title="Cohort Retention Lab", layout="wide")
 st.title("Cohort Retention Lab")
@@ -23,6 +24,7 @@ try:
     rev = revenue_by_cohort(observed_events)
     mature = retention_matrix(events, max_age=max_age, as_of=cutoff)
     weighted = retention_summary(mature)
+    ltv = cohort_ltv(events, max_age=max_age, as_of=cutoff)
 except (ValueError, KeyError, TypeError, pd.errors.ParserError) as exc:
     st.error(f"Invalid dataset: {exc}")
     st.stop()
@@ -46,6 +48,13 @@ st.plotly_chart(px.line(weighted, x="age", y="weighted_retention", markers=True,
                         labels={"age": "Cohort age (months)", "weighted_retention": "Weighted retention"}),
                 use_container_width=True)
 
+st.subheader("Observed cumulative revenue per original customer")
+st.caption("Historical cumulative recognized revenue divided by original cohort size; this is not a predictive lifetime-value model. Blank future cohort ages are excluded.")
+st.plotly_chart(px.line(ltv, x="age", y="revenue_per_original_customer", color="cohort", markers=True,
+                        labels={"age": "Cohort age (months)", "revenue_per_original_customer": "Cumulative revenue per original customer"}),
+                use_container_width=True)
+st.dataframe(ltv, use_container_width=True)
+
 st.subheader("Monthly recognized revenue")
 st.plotly_chart(px.line(m, x="month", y="revenue", markers=True), use_container_width=True)
 st.subheader("Cohort revenue")
@@ -57,3 +66,6 @@ st.download_button("Download weighted retention CSV", weighted.to_csv(index=Fals
                    "weighted_retention.csv", "text/csv")
 st.download_button("Download monthly revenue CSV", m.to_csv(index=False),
                    "monthly_metrics.csv", "text/csv")
+
+st.download_button("Download observed cohort revenue CSV", ltv.to_csv(index=False),
+                   "observed_cohort_revenue.csv", "text/csv")
