@@ -17,6 +17,7 @@ flowchart LR
     A[CSV events or seeded generator] --> B[Schema validation + monthly cohorts]
     B --> C[Activity retention + revenue]
     B --> D[Maturity-aware cohort grid]
+    D --> H[Observed cohort revenue per original customer]
     D --> E[Size-weighted age summary]
     C --> F[CSV exports]
     E --> F
@@ -42,6 +43,7 @@ flowchart LR
 - **Maturity-aware retention grid:** missing mature months count as zero, future/unobserved months are omitted.
 - **Cohort-size-weighted retention** by age, using only eligible cohorts.
 - Optional `--as-of` observation cutoff and `--max-age` horizon.
+- **Observed cohort revenue per original customer** via the Python API, with zero-revenue mature months and cumulative revenue by age. This is a historical revenue proxy, not predicted lifetime value.
 - CSV exports and a Streamlit dashboard with maturity-aware heatmap, cohort-size-weighted retention curve, observation cutoff, age horizon, and revenue views.
 
 ## Dashboard walkthrough
@@ -83,6 +85,7 @@ Six generated CSV files: `events.csv`, `retention.csv`, `cohort_revenue.csv`, `m
 src/cohortlab/
   core.py         # validated cohort and revenue calculations
   maturity.py     # maturity-aware retention and weighted summaries
+  ltv.py          # observed cohort cumulative revenue per original customer
   generate.py     # synthetic events
   cli.py          # six CSV exports
 dashboard.py      # Streamlit visualization
@@ -90,9 +93,22 @@ tests/            # pytest regression tests
 .github/workflows/ci.yml
 ```
 
+## Observed cohort revenue example
+
+```python
+from cohortlab.generate import generate
+from cohortlab.ltv import cohort_ltv
+
+result = cohort_ltv(generate(seed=42), max_age=6)
+print(result[['cohort', 'age', 'revenue', 'cumulative_revenue',
+              'revenue_per_original_customer']].head())
+```
+
+The original cohort size remains the denominator at every age. Missing mature months contribute zero revenue, and future months are omitted. This feature is available through the Python API; CLI and dashboard integration are not yet implemented.
+
 ## Verification
 
-Seven maturity-specific tests were reported passing in an earlier local run. Eleven new input-quality regression cases passed locally against the updated analytics module on Python 3.11 with pandas 2.2.3; the entire repository suite was not rerun locally. The CI workflow now installs dashboard dependencies and checks pytest, six nonempty CLI CSV exports, Python compilation, and the Streamlit HTTP health endpoint on Python 3.10 and 3.12. **The updated CI run has not yet been verified**, and an HTTP health check does not prove the Streamlit script renders without runtime exceptions. No dashboard screenshot or performance benchmark is claimed.
+Four new LTV regression tests passed in a local isolated module harness using the repository's cohort maturity behavior; the full package test suite and GitHub Actions were not verified for this change. Seven maturity-specific tests were reported passing in an earlier local run. Eleven new input-quality regression cases passed locally against the updated analytics module on Python 3.11 with pandas 2.2.3; the entire repository suite was not rerun locally. The CI workflow now installs dashboard dependencies and checks pytest, six nonempty CLI CSV exports, Python compilation, and the Streamlit HTTP health endpoint on Python 3.10 and 3.12. **The updated CI run has not yet been verified**, and an HTTP health check does not prove the Streamlit script renders without runtime exceptions. No dashboard screenshot or performance benchmark is claimed.
 
 ## Engineering trade-offs and limitations
 
@@ -108,6 +124,7 @@ Seven maturity-specific tests were reported passing in an earlier local run. Ele
 
 - Add rendered Streamlit AppTest/browser smoke tests and visual regression checks.
 - Add data-quality diagnostics, explicit event IDs, and duplicate detection.
+- Expose observed cohort revenue per customer in CLI exports and the dashboard.
 - Add DuckDB/Parquet input for larger reproducible workloads.
 - Add integration tests for dashboard startup and CSV schema contracts.
 
